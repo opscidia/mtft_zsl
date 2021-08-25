@@ -132,6 +132,9 @@ def main(argv):
 
     # Disable TQDM threading (solves a weird C runtime error)
     tqdm.tqdm.monitor_interval = 0
+    os.makedirs(FLAGS.cache_dir, exist_ok=True)
+    os.makedirs(FLAGS.checkpoint_dir, exist_ok=True)
+    os.makedirs(FLAGS.prediction_dir, exist_ok=True)
 
     if FLAGS.do_train or FLAGS.do_predict or (FLAGS.do_test and not FLAGS.prediction_dir):
         experiment: experiments.Experiment
