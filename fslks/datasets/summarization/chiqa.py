@@ -26,7 +26,7 @@ and place in the tensorflow datasets download/manual directory under chiqa/*.jso
 class ChiqaConfig(tfds.core.BuilderConfig):
     """Builder config for MEDIQA-Answer Summarization"""
 
-    @tfds.core.disallow_positional_args
+    # @tfds.core.disallow_positional_args
     def __init__(self,
                  single_doc,
                  **kwargs):

@@ -48,7 +48,7 @@ or the clinical questions and answers. Importantly, the QA pairs can be mapped t
 class CochraneConfig(tfds.core.BuilderConfig):
     """Builder config for Cochrane"""
 
-    @tfds.core.disallow_positional_args
+    # @tfds.core.disallow_positional_args
     def __init__(self, 
                  **kwargs):
         """Config for Cochrane.

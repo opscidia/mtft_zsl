@@ -27,7 +27,7 @@ and test data for Task 8b."""
 class BioasqConfig(tfds.core.BuilderConfig):
     """Builder config for Bioasq"""
 
-    @tfds.core.disallow_positional_args
+    # @tfds.core.disallow_positional_args
     def __init__(self,
                  single_doc,
                  **kwargs):

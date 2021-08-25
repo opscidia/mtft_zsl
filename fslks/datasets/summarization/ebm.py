@@ -36,7 +36,7 @@ The preprocessed data is available at https://bionlp.nlm.nih.gov"""
 class EBMConfig(tfds.core.BuilderConfig):
     """Builder config for EBM"""
 
-    @tfds.core.disallow_positional_args
+    # @tfds.core.disallow_positional_args
     def __init__(self, **kwargs):
         """Config for EBM.
 

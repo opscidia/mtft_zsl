@@ -17,7 +17,7 @@ _DUC_DOWNLOAD_INSTRUCTIONS = """Contact NIST to acquire data from prior DUC task
 class DucConfig(tfds.core.BuilderConfig):
     """Builder config for DUC"""
 
-    @tfds.core.disallow_positional_args
+    # @tfds.core.disallow_positional_args
     def __init__(self,
                  **kwargs):
         #data_dir,

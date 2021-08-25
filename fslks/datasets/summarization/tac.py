@@ -64,7 +64,7 @@ _ACQUAINT_HEADER = """<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"
 class TacConfig(tfds.core.BuilderConfig):
     """Builder config for MEDIQA-Answer Summarization"""
 
-    @tfds.core.disallow_positional_args
+    # @tfds.core.disallow_positional_args
     def __init__(self,
                  base_dir,
                  **kwargs):
