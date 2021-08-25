@@ -175,7 +175,7 @@ def main(argv):
 
     # Setup tfds parameters
     Task.data_dir = FLAGS.data_dir
-    Task.add_checksum_dir(FLAGS.checksum_dir)
+    # Task.add_checksum_dir(FLAGS.checksum_dir)
 
     # Register all our defined task mappings
     tasks.register_task_mappings()
