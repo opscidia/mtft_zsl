@@ -10,6 +10,7 @@ faulthandler.enable()
 faulthandler.register(signal.SIGUSR1)
 
 import numpy as np
+import tensorflow as tf
 
 import gorilla
 import tqdm
@@ -40,6 +41,7 @@ flags.DEFINE_integer('prefetch_size', -1, 'Number of batches to prefetch (defaul
 flags.DEFINE_integer('eval_batch_size', 8, 'Batch size to use when evaluating validation/test sets')
 flags.DEFINE_integer('eval_batches', 10, 'Number of batches to evaluate when testing')
 flags.DEFINE_boolean('use_xla', False, 'Enable XLA optimization')
+flags.DEFINE_boolean('use_tpu', False, 'Use TPU ressources')
 flags.DEFINE_boolean('use_amp', False, 'Enable AMP optimization')
 flags.DEFINE_boolean('do_train', False, 'Train and validate the specified model')
 flags.DEFINE_boolean('do_predict', False, 'Save (trained) model predictions model')
@@ -130,8 +132,27 @@ def main(argv):
 
     logging.set_verbosity(logging.DEBUG)
 
+    # TPU
+    tpu = None
+    if FLAGS.use_tpu:
+        try:
+            tpu = tf.distribute.cluster_resolver.TPUClusterResolver()
+            print('Running on TPU ', tpu.master())
+        except ValueError:
+            tpu = None
+
+    if tpu:
+        tf.config.experimental_connect_to_cluster(tpu)
+        tf.tpu.experimental.initialize_tpu_system(tpu)
+        strategy = tf.distribute.TPUStrategy(tpu)
+    else:
+        strategy = tf.distribute.get_strategy()
+    print(f"{'='*80}\nREPLICAS: {strategy.num_replicas_in_sync}\n{'='*80}")
+
     # Disable TQDM threading (solves a weird C runtime error)
     tqdm.tqdm.monitor_interval = 0
+
+    # Directories
     os.makedirs(FLAGS.cache_dir, exist_ok=True)
     os.makedirs(FLAGS.checkpoint_dir, exist_ok=True)
     os.makedirs(FLAGS.prediction_dir, exist_ok=True)
