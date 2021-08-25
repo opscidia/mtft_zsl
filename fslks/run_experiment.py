@@ -159,30 +159,31 @@ def main(argv):
 
     if FLAGS.do_train or FLAGS.do_predict or (FLAGS.do_test and not FLAGS.prediction_dir):
         experiment: experiments.Experiment
-        if FLAGS.implementation == 'tensorflow':
-            # configure_tf(FLAGS.use_xla, FLAGS.use_amp)
-            experiment = experiments.TFExperiment(cache_dir=FLAGS.cache_dir,
-                                                  configuration_name=FLAGS.init_checkpoint,
-                                                  max_seq_len=FLAGS.max_seq_len,
-                                                  use_xla=FLAGS.use_xla,
-                                                  use_amp=FLAGS.use_amp,
-                                                  seed=FLAGS.seed)
-        elif FLAGS.implementation == 'pytorch':
-            experiment = experiments.PTExperiment(cache_dir=FLAGS.cache_dir,
-                                                  configuration_name=FLAGS.init_checkpoint,
-                                                  max_seq_len=FLAGS.max_seq_len,
-                                                  use_amp=FLAGS.use_amp,
-                                                  warmup_epochs=FLAGS.warmup_epochs,
-                                                  seed=FLAGS.seed,
-                                                  temperature=FLAGS.temperature,
-                                                  dynamic_mixing=FLAGS.dynamic_mixing,
-                                                  mix_from_validation=FLAGS.mix_from_validation,
-                                                  clip_mixing_size=FLAGS.clip_mixing_size)
-        else:
-            raise NotImplementedError('Unsupported implementation \"%s\"' % FLAGS.implementation)
+        with strategy.scope():
+            if FLAGS.implementation == 'tensorflow':
+                # configure_tf(FLAGS.use_xla, FLAGS.use_amp)
+                experiment = experiments.TFExperiment(cache_dir=FLAGS.cache_dir,
+                                                    configuration_name=FLAGS.init_checkpoint,
+                                                    max_seq_len=FLAGS.max_seq_len,
+                                                    use_xla=FLAGS.use_xla,
+                                                    use_amp=FLAGS.use_amp,
+                                                    seed=FLAGS.seed)
+            elif FLAGS.implementation == 'pytorch':
+                experiment = experiments.PTExperiment(cache_dir=FLAGS.cache_dir,
+                                                    configuration_name=FLAGS.init_checkpoint,
+                                                    max_seq_len=FLAGS.max_seq_len,
+                                                    use_amp=FLAGS.use_amp,
+                                                    warmup_epochs=FLAGS.warmup_epochs,
+                                                    seed=FLAGS.seed,
+                                                    temperature=FLAGS.temperature,
+                                                    dynamic_mixing=FLAGS.dynamic_mixing,
+                                                    mix_from_validation=FLAGS.mix_from_validation,
+                                                    clip_mixing_size=FLAGS.clip_mixing_size)
+            else:
+                raise NotImplementedError('Unsupported implementation \"%s\"' % FLAGS.implementation)
 
-        # Load model
-        model = experiment.load_model(model_name=FLAGS.init_checkpoint)
+            # Load model
+            model = experiment.load_model(model_name=FLAGS.init_checkpoint)
 
     patch_settings = gorilla.Settings(allow_hit=True)
 
@@ -206,29 +207,30 @@ def main(argv):
 
     if FLAGS.do_train:
         # Parse dataset and split
-        training_tasks = Task.parse_train_tasks(FLAGS.training_tasks)
-        validation_tasks = Task.parse_validation_tasks(FLAGS.validation_tasks)
+        with strategy.scope():
+            training_tasks = Task.parse_train_tasks(FLAGS.training_tasks)
+            validation_tasks = Task.parse_validation_tasks(FLAGS.validation_tasks)
 
-        if FLAGS.dynamic_mixing and FLAGS.mix_from_validation:
-            train_sets: Dict[str, Task] = {t.dataset: t for t in training_tasks}
-            valid_sets: Dict[str, Task] = {t.dataset: t for t in validation_tasks}
-            if train_sets.keys() != valid_sets.keys():
-                logging.error('Dynamic mixing from validation requites validation data for each training task!')
-            for dataset in train_sets.keys() - valid_sets.keys():
-                if Task.split_in_dataset("validation", dataset):
-                    valid_sets[dataset] = Task(dataset, 'validation')
-                    logging.warning('Adding %s to validation tasks', dataset)
-                else:
-                    train_sets[dataset] = Task(dataset, 'train[:70%]')
-                    valid_sets[dataset] = Task(dataset, 'train[-30%:]')
-                    logging.warning('Adjusting %s to use 80%% for training and 20%% for validation', dataset)
-            training_tasks = []
-            validation_tasks = []
-            for dataset in train_sets:
-                training_tasks.append(train_sets[dataset])
-                validation_tasks.append(valid_sets[dataset])
-            for dataset in valid_sets.keys() - train_sets.keys():
-                validation_tasks.append(valid_sets[dataset])
+            if FLAGS.dynamic_mixing and FLAGS.mix_from_validation:
+                train_sets: Dict[str, Task] = {t.dataset: t for t in training_tasks}
+                valid_sets: Dict[str, Task] = {t.dataset: t for t in validation_tasks}
+                if train_sets.keys() != valid_sets.keys():
+                    logging.error('Dynamic mixing from validation requites validation data for each training task!')
+                for dataset in train_sets.keys() - valid_sets.keys():
+                    if Task.split_in_dataset("validation", dataset):
+                        valid_sets[dataset] = Task(dataset, 'validation')
+                        logging.warning('Adding %s to validation tasks', dataset)
+                    else:
+                        train_sets[dataset] = Task(dataset, 'train[:70%]')
+                        valid_sets[dataset] = Task(dataset, 'train[-30%:]')
+                        logging.warning('Adjusting %s to use 80%% for training and 20%% for validation', dataset)
+                training_tasks = []
+                validation_tasks = []
+                for dataset in train_sets:
+                    training_tasks.append(train_sets[dataset])
+                    validation_tasks.append(valid_sets[dataset])
+                for dataset in valid_sets.keys() - train_sets.keys():
+                    validation_tasks.append(valid_sets[dataset])
 
         if FLAGS.checkpoint_dir:
             # Make directories to save best checkpoint and final checkpoint
